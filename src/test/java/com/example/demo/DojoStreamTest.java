@@ -42,11 +42,12 @@ public class DojoStreamTest {
     @Test
     void mejorJugadorConNacionalidadFrancia(){
         List<Player> list = CsvUtilFile.getPlayers();
-        Optional<Player> result = list.stream()
-                .filter(player -> player.getNational().equals("France"))
-                .max(Comparator.comparing(Player::getWinners));
 
-        System.out.println(result.get());
+         list.stream()
+                .filter(player -> player.getNational().equals("France"))
+                .max(Comparator.comparing(Player::getWinners))
+                        .ifPresent(System.out::println);
+
     }
 
 

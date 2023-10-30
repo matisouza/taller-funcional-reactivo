@@ -57,13 +57,6 @@ public class DojoReactiveTest {
         List<Player> list = CsvUtilFile.getPlayers();
         Flux<Player> observable = Flux.fromIterable(list);
 
-        /**observable.filter(player -> player.getNational().equals("France"))
-                .collectList()
-                .map(players -> players.stream()
-                        .max(Comparator.comparing(Player::getWinners)))
-                .subscribe(System.out::println);
-         */
-
         observable.filter(player -> player.getNational().equals("France"))
                 .reduce((player, player2) -> player.getWinners() > player2.getWinners() ? player : player2)
                 .subscribe(System.out::println);
@@ -101,21 +94,23 @@ public class DojoReactiveTest {
 
         observable.collectList()
                 .map(players -> players.stream()
-                        .max(Comparator.comparing(Player::getWinners)))
-                .map(player -> player.map(Player::getClub))
+                        .max(Comparator.comparing(Player::getWinners))
+                        .orElse(null))
+                .map(Player::getClub)
                 .subscribe(System.out::println);
 
     }
 
     @Test
-    void ElMejorJugador() {
+    void ElMejorJugadorConOptional() {
         List<Player> list = CsvUtilFile.getPlayers();
         Flux<Player> observable = Flux.fromIterable(list);
 
         observable
                 .collectList()
                 .map(players -> players.stream()
-                        .max(Comparator.comparing(Player::getWinners)))
+                        .max(Comparator.comparing(Player::getWinners))
+                        .orElse(null))
                 .subscribe(System.out::println);
     }
 
@@ -126,7 +121,13 @@ public class DojoReactiveTest {
 
         observable
                 .reduce((player, player2) -> player.getWinners() > player2.getWinners() ? player : player2)
-                .subscribe(System.out::println);
+                .subscribe(mejorJugador -> {
+                    if (mejorJugador != null) {
+                        System.out.println("Mejor jugador: " + mejorJugador.getName());
+                    } else {
+                        System.out.println("No se encontró al mejor jugador");
+                    }
+                });
     }
 
     @Test
@@ -144,9 +145,55 @@ public class DojoReactiveTest {
                         System.out.println(nacionalidad + ": " + mejorJugador.get().getName());
                     });
                 });
-
     }
 
+    @Test
+    void mejorJugadorSegunNacionalidadReactor() {
+        List<Player> list = CsvUtilFile.getPlayers();
+        Flux<Player> observable = Flux.fromIterable(list);
 
+        observable
+                .groupBy(Player::getNational)
+                .flatMap(group -> group
+                        .reduce((player1, player2) ->
+                                player1.getWinners() > player2.getWinners() ? player1 : player2)
+                        .map(Player::getName)
+                        .defaultIfEmpty("Matias Souza")
+                        .map(mejorJugador ->
+                                group.key() + ": " + mejorJugador)
+                )
+                .subscribe(System.out::println);
+    }
 
+    @Test
+    void mejores10jugadores() {
+        List<Player> list = CsvUtilFile.getPlayers();
+        Flux<Player> observable = Flux.fromIterable(list);
+
+        observable
+                .sort(Comparator.comparing(Player::getWinners).reversed())
+                .take(10)
+                .subscribe(System.out::println);
+    }
+    @Test
+    void mejores10jugadoresSegunNacionalidad() {
+        List<Player> list = CsvUtilFile.getPlayers();
+        Flux<Player> observable = Flux.fromIterable(list);
+        String nacionalidad = "Argentina";
+
+        observable
+                .filter(player -> player.getNational().equals(nacionalidad))
+                .groupBy(Player::getNational)
+                .flatMap(group -> group
+                        .sort(Comparator.comparing(Player::getWinners).reversed())
+                        .map(player ->
+                                group.key() +
+                                        ": " + player.getName() +
+                                        " victorias: " + player.getWinners() +
+                                        " - Cantidad de partidos: " + player.getGames()
+                        )
+                )
+                .take(10)
+                .subscribe(System.out::println);
+    }
 }
