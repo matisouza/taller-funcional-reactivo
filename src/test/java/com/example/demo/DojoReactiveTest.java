@@ -179,7 +179,7 @@ public class DojoReactiveTest {
     void mejores10jugadoresSegunNacionalidad() {
         List<Player> list = CsvUtilFile.getPlayers();
         Flux<Player> observable = Flux.fromIterable(list);
-        String nacionalidad = "Argentina";
+        String nacionalidad = "Uruguay";
 
         observable
                 .filter(player -> player.getNational().equals(nacionalidad))
@@ -187,10 +187,11 @@ public class DojoReactiveTest {
                 .flatMap(group -> group
                         .sort(Comparator.comparing(Player::getWinners).reversed())
                         .map(player ->
-                                group.key() +
-                                        ": " + player.getName() +
-                                        " victorias: " + player.getWinners() +
-                                        " - Cantidad de partidos: " + player.getGames()
+                                "Nacionalidad: " +
+                                    group.key()  + "\n" +
+                                        "Nombre: " + player.getName() + "\n" +
+                                        " - victorias: " + player.getWinners() + "\n" +
+                                        " - Cantidad de partidos: " + player.getGames() + "\n"
                         )
                 )
                 .take(10)
